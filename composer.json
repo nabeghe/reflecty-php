@@ -1,0 +1,35 @@
+{
+  "name": "nabeghe/reflecty",
+  "description": "Simple reflection helper for PHP.",
+  "keywords": [
+    "reflection", "reflecty", "reflection class", "class", "method", "property", "trait", "constructor", "trait constructor"
+  ],
+  "type": "library",
+  "version": "0.1.0",
+  "homepage": "https://github.com/nabeghe/reflecty-php",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Nabeghe\\Reflecty\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Nabeghe\\Reflecty\\Tests\\": "tests/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Hadi Akbarzadeh",
+      "email": "hadicoder@gmail.com",
+      "homepage": "https://elatel.ir",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "9.6"
+  }
+}
