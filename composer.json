@@ -5,7 +5,6 @@
     "reflection", "reflecty", "reflection class", "class", "method", "property", "trait", "constructor", "trait constructor"
   ],
   "type": "library",
-  "version": "0.1.0",
   "homepage": "https://github.com/nabeghe/reflecty-php",
   "license": "MIT",
   "autoload": {

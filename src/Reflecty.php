@@ -253,7 +253,7 @@ class Reflecty
         try {
             $r = new ReflectionClass($class);
             return count($r->getProperties());
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
         }
         return null;
     }
