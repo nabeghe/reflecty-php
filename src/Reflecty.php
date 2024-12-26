@@ -49,6 +49,7 @@ class Reflecty
     public static function classBasename($class)
     {
         $class = static::classFullname($class);
+
         return basename(str_replace('\\', '/', $class));
     }
 
@@ -80,6 +81,7 @@ class Reflecty
         while ($class = get_parent_class($class)) {
             $ancestors[] = $class;
         }
+
         return $ancestors;
     }
 
@@ -133,6 +135,7 @@ class Reflecty
         if (is_object($class)) {
             $class = get_class($class);
         }
+
         return in_array($trait, static::classUsesRecursive($class));
     }
 
@@ -182,10 +185,11 @@ class Reflecty
     {
         if ($visibility) {
             $constantNames = static::constants($class, $visibility) ?? [];
+
             return in_array($constant, $constantNames);
-        } else {
-            return defined(static::classFullname($class).'::'.$constant);
         }
+
+        return defined(static::classFullname($class).'::'.$constant);
     }
 
     /**
@@ -232,14 +236,17 @@ class Reflecty
         try {
             $r = new ReflectionClass($class);
             $prop = $r->getProperty($property);
+
             if ($accessible === null) {
                 return $prop->isPublic();
             }
+
             $prop->setAccessible($accessible);
+
             return true;
         } catch (ReflectionException $e) {
+            return null;
         }
-        return null;
     }
 
     /**
@@ -252,10 +259,11 @@ class Reflecty
     {
         try {
             $r = new ReflectionClass($class);
+
             return count($r->getProperties());
         } catch (\Throwable $e) {
+            return null;
         }
-        return null;
     }
 
     /**
@@ -265,10 +273,11 @@ class Reflecty
      * @param  string  $property
      * @return bool|null
      */
-    public static function hasProperty($class, $property): ?bool
+    public static function propertyExists($class, $property): ?bool
     {
         try {
             $r = new ReflectionClass($class);
+
             return $r->hasProperty($property);
         } catch (ReflectionException $e) {
             return null;
@@ -283,16 +292,23 @@ class Reflecty
      * @param  mixed  $default
      * @return \ReflectionProperty|null
      */
-    public static function getProperty($class, $property, $default = null)
+    public static function property($class, $property, $default = null)
     {
         try {
             $r = new ReflectionClass($class);
+
             if ($r->hasProperty($property)) {
                 return $r->getProperty($property);
             }
         } catch (ReflectionException $e) {
         }
+
         return $default;
+    }
+
+    public static function getProperty($class, $property, $default = null)
+    {
+        return static::property($class, $property, $default);
     }
 
     /**
@@ -303,16 +319,23 @@ class Reflecty
      * @param  mixed  $default
      * @return \ReflectionProperty|null
      */
-    public static function getPropertyValue($object, $property, $default = null)
+    public static function propertyValue($object, $property, $default = null)
     {
         try {
             $r = new ReflectionClass($object);
+
             if ($r->hasProperty($property)) {
                 return $r->getProperty($property)->getValue($object);
             }
-        } catch (ReflectionException $e) {
+        } catch (\Throwable $e) {
         }
+
         return $default;
+    }
+
+    public static function getPropertyValue($object, $property, $default = null)
+    {
+        return static::propertyValue($object, $property, $default);
     }
 
     /**
@@ -325,9 +348,11 @@ class Reflecty
     {
         try {
             $r = new ReflectionClass($class);
+
             return count($r->getMethods());
         } catch (ReflectionException) {
         }
+
         return null;
     }
 
@@ -344,13 +369,17 @@ class Reflecty
         try {
             $r = new ReflectionClass($class);
             $method = $r->getMethod($method);
+
             if ($accessible === null) {
                 return $method->isPublic();
             }
+
             $method->setAccessible($accessible);
+
             return true;
         } catch (ReflectionException) {
         }
+
         return null;
     }
 
@@ -365,6 +394,7 @@ class Reflecty
     {
         try {
             $r = new ReflectionMethod($class, $method);
+
             return $r->getParameters();
         } catch (ReflectionException) {
             return null;
@@ -381,6 +411,7 @@ class Reflecty
     public static function methodParamNames($class, $method)
     {
         $prams = static::methodParams($class, $method);
+
         return $prams === null ? null : array_map(fn($param) => $param->getName(), $prams);
     }
 
@@ -397,12 +428,14 @@ class Reflecty
         if ($params === null) {
             return null;
         }
+
         $optionals = [];
         foreach ($params as $param) {
             if ($param->isOptional()) {
                 $optionals[] = $param;
             }
         }
+
         return $optionals;
     }
 
@@ -416,6 +449,74 @@ class Reflecty
     public static function methodOptionalParamNames($class, $method)
     {
         $params = static::methodOptionalParams($class, $method);
+
         return $params === null ? null : array_map(fn($param) => $param->getName(), $params);
+    }
+
+    /**
+     * Returns the case of based on its name.
+     *
+     * @param  string  $enum  Thee enum.
+     * @param  string  $name  The case name.
+     * @return false|null
+     */
+    public static function enumByName(string $enum, string $name)
+    {
+        if (!$enum || !function_exists('enum_exists') || !enum_exists($enum)) {
+            return false;
+        }
+
+        /** @noinspection PhpUndefinedMethodInspection */
+        foreach ($enum::cases() as $case) {
+            if ($case->name === $name) {
+                return $case;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks whether a name exists as a case in the enum or not.
+     *
+     * @param  string  $enum
+     * @param  string  $name
+     * @return bool
+     */
+    public static function enumHasName(string $enum, string $name): bool
+    {
+        return static::enumByName($name, $enum) !== null;
+    }
+
+    /**
+     * Returns an array of the enum case names.
+     *
+     * @param  string  $enum
+     * @return array|null
+     */
+    public static function enumNames(string $enum)
+    {
+        if (!$enum || !function_exists('enum_exists') || !enum_exists($enum)) {
+            return null;
+        }
+
+        /** @noinspection PhpUndefinedMethodInspection */
+        return array_column($enum::cases(), 'name');
+    }
+
+    /**
+     * Returns an array of the enum case values.
+     *
+     * @param  string  $enum
+     * @return array|null
+     */
+    public static function enumValues(string $enum)
+    {
+        if (!$enum || !function_exists('enum_exists') || !enum_exists($enum)) {
+            return null;
+        }
+
+        /** @noinspection PhpUndefinedMethodInspection */
+        return array_column($enum::cases(), 'value');
     }
 }

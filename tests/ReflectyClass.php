@@ -113,26 +113,46 @@ class ReflectyClass extends \PHPUnit\Framework\TestCase
     public function testHasProperty()
     {
         $object = new MyClass();
-        $this->assertTrue(Reflecty::hasProperty(MyClass::class, 'prop_1'));
-        $this->assertFalse(Reflecty::hasProperty($object, 'prop_not_found'));
+        $this->assertTrue(Reflecty::propertyExists(MyClass::class, 'prop_1'));
+        $this->assertFalse(Reflecty::propertyExists($object, 'prop_not_found'));
     }
 
     public function testGetProperty()
     {
         $object = new MyClass();
-        $this->assertInstanceOf(\ReflectionProperty::class, Reflecty::getProperty($object, 'prop_1'));
+        $this->assertInstanceOf(\ReflectionProperty::class, Reflecty::property($object, 'prop_1'));
     }
 
     public function testGetPropertyValue()
     {
         $object = new MyClass();
-        $this->assertSame('value_1', Reflecty::getPropertyValue($object, 'prop_1'));
+        $this->assertSame('value_1', Reflecty::propertyValue($object, 'prop_1'));
     }
 
     public function testMethodsCount()
     {
         $object = new MyClass();
         $this->assertSame(4, Reflecty::methodsCount($object, 'prop_1'));
+    }
+
+    public function testEnumByName()
+    {
+        $this->assertSame(SampleEnum::NAME_1, Reflecty::enumByName(SampleEnum::class, 'NAME_1'));
+        $this->assertSame(null, Reflecty::enumByName(SampleEnum::class, '123'));
+    }
+
+    public function testEnumNames()
+    {
+        $this->assertSame([
+            'NAME_1', 'NAME_2', 'NAME_3', 'NAME_4', 'NAME_5',
+        ], Reflecty::enumNames(SampleEnum::class));
+    }
+
+    public function testEnumValues()
+    {
+        $this->assertSame([
+            'Value 1', 'Value 2', 'Value 3', 'Value 4', 'Value 5',
+        ], Reflecty::enumValues(SampleEnum::class));
     }
 }
 
@@ -188,4 +208,13 @@ class MyClass extends MyParent
     public function private_method_1()
     {
     }
+}
+
+enum SampleEnum: string
+{
+    case NAME_1 = 'Value 1';
+    case NAME_2 = 'Value 2';
+    case NAME_3 = 'Value 3';
+    case NAME_4 = 'Value 4';
+    case NAME_5 = 'Value 5';
 }
