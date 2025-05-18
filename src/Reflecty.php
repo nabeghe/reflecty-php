@@ -11,9 +11,10 @@ class Reflecty
 {
     /**
      * Returns the namespace of the given object/class.
+     *
      * The class name itself is not included within the namespace.
      *
-     * @param $class
+     * @param  object|string  $class
      * @return string
      */
     public static function classNamespace($class): string
@@ -35,18 +36,18 @@ class Reflecty
      * @param  object|string  $class
      * @return string
      */
-    public static function classFullname($class)
+    public static function classFullname($class): string
     {
         return is_object($class) ? get_class($class) : $class;
     }
 
     /**
-     * Gets the class "basename" of the given object/class.
+     * Returns the class "basename" of the given object/class.
      *
      * @param  string|object  $class
      * @return string
      */
-    public static function classBasename($class)
+    public static function classBasename($class): string
     {
         $class = static::classFullname($class);
 
@@ -54,7 +55,7 @@ class Reflecty
     }
 
     /**
-     * Returns reflection object of the given object/class.
+     * Returns a ReflectionClass instance for the given class/object.
      *
      * @param  object|string  $class
      * @return ReflectionClass|null
@@ -72,8 +73,8 @@ class Reflecty
     /**
      * Returns all parent classes of the given object/class from the most recent to the earliest.
      *
-     * @param  object|string  $class  Object or Classname.
-     * @return array
+     * @param  object|string  $class
+     * @return string[]
      */
     public static function classAncestors($class): array
     {
@@ -252,7 +253,7 @@ class Reflecty
     /**
      * Returns the number of properties of the given object/class.
      *
-     * @param $class
+     * @param  object|string  $class
      * @return int|null
      */
     public static function propertiesCount($class)
@@ -456,8 +457,8 @@ class Reflecty
     /**
      * Returns the case of based on its name.
      *
-     * @param  string  $enum  Thee enum.
-     * @param  string  $name  The case name.
+     * @param  string  $enum  Enum class.
+     * @param  string  $name  Case name.
      * @return false|null
      */
     public static function enumByName(string $enum, string $name)
@@ -479,8 +480,8 @@ class Reflecty
     /**
      * Checks whether a name exists as a case in the enum or not.
      *
-     * @param  string  $enum
-     * @param  string  $name
+     * @param  string  $enum  Enum class.
+     * @param  string  $name  Case name.
      * @return bool
      */
     public static function enumHasName(string $enum, string $name): bool
@@ -491,8 +492,8 @@ class Reflecty
     /**
      * Returns an array of the enum case names.
      *
-     * @param  string  $enum
-     * @return array|null
+     * @param  string  $enum  Enum class.
+     * @return string[]|null
      */
     public static function enumNames(string $enum)
     {
@@ -518,5 +519,74 @@ class Reflecty
 
         /** @noinspection PhpUndefinedMethodInspection */
         return array_column($enum::cases(), 'value');
+    }
+
+    /**
+     * Compares two values or enum cases for equality.
+     *
+     * @param  object|string|int  $enum1  First enum case object, string, or int to compare.
+     * @param  object|string|int  $enum2  Second enum case object, string, or int to compare.
+     * @return bool
+     * @noinspection PhpElementIsNotAvailableInCurrentPhpVersionInspection
+     */
+    public static function enumEquals(object|string|int $enum1, object|string|int $enum2): bool
+    {
+        if (PHP_VERSION_ID < 80000) {
+            return false;
+        }
+
+        $getValue = fn($val) => ($val instanceof \UnitEnum && property_exists($val, 'value')) ? $val->value : $val;
+
+        return $getValue($enum1) === $getValue($enum2);
+    }
+
+    /**
+     * Returns instances of attributes for a class or method.
+     *
+     * @template TAttribute
+     * @param  string|array{0:string, 1:string}  $target  Class name or [0 => class, 1 => method]
+     * @param  class-string<TAttribute>|null  $attributeClass  Filter attribute class
+     * @return iterable<TAttribute>
+     * @noinspection PhpElementIsNotAvailableInCurrentPhpVersionInspection
+     */
+    public static function attributes(string|array $target, ?string $attributeClass = null): iterable
+    {
+        if (PHP_VERSION_ID < 80000) {
+            return [];
+        }
+
+        try {
+            if (is_string($target)) {
+                $r = new ReflectionClass($target);
+            } elseif (is_array($target) && isset($target[0]) && isset($target[1])) {
+                $r = new ReflectionMethod($target[0], $target[1]);
+            } else {
+                return [];
+            }
+
+            foreach ($r->getAttributes($attributeClass) as $attribute) {
+                yield $attribute->newInstance();
+            }
+        } catch (ReflectionException) {
+        }
+
+        return [];
+    }
+
+    /**
+     * Returns the first attribute instance of the given class/method.
+     *
+     * @template TAttribute
+     * @param  string|array{0:string, 1:string}  $target  Class name or [0 => class, 1 => method]
+     * @param  class-string<TAttribute>|null  $attributeClass  Filter attribute class
+     * @return TAttribute|null
+     */
+    public static function attribute(string|array $target, ?string $attributeClass = null)
+    {
+        foreach (self::attributes($target, $attributeClass) as $attr) {
+            return $attr;
+        }
+
+        return null;
     }
 }

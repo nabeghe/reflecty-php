@@ -1,19 +1,23 @@
 <?php declare(strict_types=1);
 
-namespace Nabeghe\Reflecty\Tests;
+namespace Nabeghe\Reflecty\Tests\Unit;
 
 use Nabeghe\Reflecty\Reflecty;
+use Nabeghe\Reflecty\Tests\Fixtures\Attributes\CustomAttribute;
+use Nabeghe\Reflecty\Tests\Fixtures\Enums\SampleEnum;
+use Nabeghe\Reflecty\Tests\Fixtures\MyClass;
+use Nabeghe\Reflecty\Tests\Fixtures\Traits\MyTrait;
 
-class ReflectyClass extends \PHPUnit\Framework\TestCase
+class ReflectyTest extends \PHPUnit\Framework\TestCase
 {
     public function testClassNamespace()
     {
-        $this->assertSame('Nabeghe\Reflecty\Tests', Reflecty::classNamespace(MyClass::class));
+        $this->assertSame('Nabeghe\Reflecty\Tests\Fixtures', Reflecty::classNamespace(MyClass::class));
     }
 
     public function testClassFullname()
     {
-        $this->assertSame('Nabeghe\Reflecty\Tests\MyClass', Reflecty::classFullname(MyClass::class));
+        $this->assertSame('Nabeghe\Reflecty\Tests\Fixtures\MyClass', Reflecty::classFullname(MyClass::class));
     }
 
     public function testClassBasename()
@@ -29,7 +33,7 @@ class ReflectyClass extends \PHPUnit\Framework\TestCase
     public function testClassAncestors()
     {
         $this->assertSame([
-            'Nabeghe\Reflecty\Tests\MyParent',
+            'Nabeghe\Reflecty\Tests\Fixtures\MyParent',
             'stdClass',
         ], Reflecty::classAncestors(MyClass::class));
     }
@@ -37,17 +41,17 @@ class ReflectyClass extends \PHPUnit\Framework\TestCase
     public function testClassUsesRecursive()
     {
         $this->assertSame([
-            'Nabeghe\Reflecty\Tests\TraitParent' => 'Nabeghe\Reflecty\Tests\TraitParent',
-            'Nabeghe\Reflecty\Tests\Trait1' => 'Nabeghe\Reflecty\Tests\Trait1',
-            'Nabeghe\Reflecty\Tests\Trait2' => 'Nabeghe\Reflecty\Tests\Trait2',
+            'Nabeghe\Reflecty\Tests\Fixtures\Traits\TraitParent' => 'Nabeghe\Reflecty\Tests\Fixtures\Traits\TraitParent',
+            'Nabeghe\Reflecty\Tests\Fixtures\Traits\Trait1' => 'Nabeghe\Reflecty\Tests\Fixtures\Traits\Trait1',
+            'Nabeghe\Reflecty\Tests\Fixtures\Traits\Trait2' => 'Nabeghe\Reflecty\Tests\Fixtures\Traits\Trait2',
         ], Reflecty::classUsesRecursive(MyClass::class));
     }
 
     public function testTraitUsesRecursive()
     {
         $this->assertSame([
-            'Nabeghe\Reflecty\Tests\Trait1' => 'Nabeghe\Reflecty\Tests\Trait1',
-            'Nabeghe\Reflecty\Tests\Trait2' => 'Nabeghe\Reflecty\Tests\Trait2',
+            'Nabeghe\Reflecty\Tests\Fixtures\Traits\Trait1' => 'Nabeghe\Reflecty\Tests\Fixtures\Traits\Trait1',
+            'Nabeghe\Reflecty\Tests\Fixtures\Traits\Trait2' => 'Nabeghe\Reflecty\Tests\Fixtures\Traits\Trait2',
         ], Reflecty::traitUsesRecursive(MyTrait::class));
     }
 
@@ -132,7 +136,7 @@ class ReflectyClass extends \PHPUnit\Framework\TestCase
     public function testMethodsCount()
     {
         $object = new MyClass();
-        $this->assertSame(4, Reflecty::methodsCount($object, 'prop_1'));
+        $this->assertSame(4, Reflecty::methodsCount($object));
     }
 
     public function testEnumByName()
@@ -154,67 +158,22 @@ class ReflectyClass extends \PHPUnit\Framework\TestCase
             'Value 1', 'Value 2', 'Value 3', 'Value 4', 'Value 5',
         ], Reflecty::enumValues(SampleEnum::class));
     }
-}
 
-trait  Trait1
-{
-}
-
-trait  Trait2
-{
-}
-
-trait  TraitParent
-{
-}
-
-trait  MyTrait
-{
-    use Trait1, Trait2;
-}
-
-class MyParent extends \stdClass
-{
-    use TraitParent;
-
-    public const CONST_0 = 'VALUE_0';
-
-    public function parent_method_1()
+    public function testEnumEquals()
     {
+        $this->assertTrue(Reflecty::enumEquals(SampleEnum::NAME_1, 'Value 1'));
+        $this->assertFalse(Reflecty::enumEquals('Value 3', SampleEnum::NAME_4));
+    }
 
+    public function testAttribute()
+    {
+        $custom_attribute = Reflecty::attribute(MyClass::class);
+        $this->assertInstanceOf(CustomAttribute::class, $custom_attribute);
+
+        $custom_attribute = Reflecty::attribute(MyClass::class, CustomAttribute::class);
+        $this->assertInstanceOf(CustomAttribute::class, $custom_attribute);
     }
 }
 
-class MyClass extends MyParent
-{
-    use Trait1, Trait2;
 
-    public const CONST_1 = 'VALUE_1';
-    public const CONST_2 = 'VALUE_2';
-    private const PRIVATE_CONST_1 = 'PRIVATE_VALUE_1';
 
-    public $prop_1 = "value_1";
-    private $prop_private_1 = "private_value_1";
-    private $prop_protected_1 = "protected_value_1";
-
-    public function method_1()
-    {
-    }
-
-    public function method_2()
-    {
-    }
-
-    public function private_method_1()
-    {
-    }
-}
-
-enum SampleEnum: string
-{
-    case NAME_1 = 'Value 1';
-    case NAME_2 = 'Value 2';
-    case NAME_3 = 'Value 3';
-    case NAME_4 = 'Value 4';
-    case NAME_5 = 'Value 5';
-}

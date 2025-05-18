@@ -17,6 +17,9 @@
       "Nabeghe\\Reflecty\\Tests\\": "tests/"
     }
   },
+  "scripts": {
+    "test": "phpunit"
+  },
   "authors": [
     {
       "name": "Hadi Akbarzadeh",
