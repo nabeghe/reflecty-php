@@ -1,8 +1,6 @@
-# Reflecty
+# Reflecty for PHP ≥ 7.4
 
 > Simple reflection helper for PHP.
-
-<hr>
 
 ## 🫡 Usage
 
@@ -13,8 +11,6 @@ You can install the package via composer:
 ```bash
 composer require nabeghe/reflecty
 ```
-
-<hr>
 
 ### Example - Class Ancestors
 
@@ -44,10 +40,6 @@ print_r(Reflecty::classAncestors(Cat::class));
  */
 ```
 
-<hr>
-
 ## 📖 License
-
-Copyright (c) Hadi Akbarzadeh
 
 Licensed under the MIT license, see [LICENSE.md](LICENSE.md) for details.
