@@ -9,6 +9,26 @@ use ReflectionException;
  */
 class Reflecty
 {
+    protected static array $cache = [];
+
+    protected static int $cacheLimit = 10;
+
+    public static function setCacheLimit(int $limit): void
+    {
+        static::$cacheLimit = $limit;
+    }
+
+    protected static function limitCache(string $key): void
+    {
+        if (static::$cacheLimit <= 0 || !isset(static::$cache[$key])) {
+            return;
+        }
+
+        if (count(static::$cache[$key]) > static::$cacheLimit) {
+            array_shift(static::$cache[$key]);
+        }
+    }
+
     /**
      * Returns the namespace of the given object/class.
      *
@@ -58,13 +78,30 @@ class Reflecty
      * Returns a ReflectionClass instance for the given class/object.
      *
      * @param  object|string  $class
+     * @param  bool  $referesh
      * @return ReflectionClass|null
      */
-    public static function classReflection($class): ?ReflectionClass
+    public static function classReflection($class, bool $referesh = false): ?ReflectionClass
     {
         try {
-            return new ReflectionClass($class);
-        } catch (ReflectionException) {
+            if (is_object($class)) {
+                $class = get_class($class);
+                if (isset(static::$cache['rc'][$class])) {
+                    return static::$cache['rc'][$class];
+                }
+            }
+
+            if (!isset(static::$cache['rc'])) {
+                static::$cache['rc'] = [];
+            }
+
+            $r = new ReflectionClass($class);
+            static::$cache['rc'][] = $r;
+
+            static::limitCache('rc');
+
+            return $r;
+        } catch (ReflectionException $e) {
         }
 
         return null;
@@ -170,7 +207,7 @@ class Reflecty
             }
 
             return $constants;
-        } catch (ReflectionException) {
+        } catch (ReflectionException $e) {
             return null;
         }
     }
@@ -351,7 +388,7 @@ class Reflecty
             $r = new ReflectionClass($class);
 
             return count($r->getMethods());
-        } catch (ReflectionException) {
+        } catch (ReflectionException $e) {
         }
 
         return null;
@@ -378,7 +415,7 @@ class Reflecty
             $method->setAccessible($accessible);
 
             return true;
-        } catch (ReflectionException) {
+        } catch (ReflectionException $e) {
         }
 
         return null;
@@ -397,7 +434,7 @@ class Reflecty
             $r = new ReflectionMethod($class, $method);
 
             return $r->getParameters();
-        } catch (ReflectionException) {
+        } catch (ReflectionException $e) {
             return null;
         }
     }
@@ -529,7 +566,7 @@ class Reflecty
      * @return bool
      * @noinspection PhpElementIsNotAvailableInCurrentPhpVersionInspection
      */
-    public static function enumEquals(object|string|int $enum1, object|string|int $enum2): bool
+    public static function enumEquals($enum1, $enum2): bool
     {
         if (PHP_VERSION_ID < 80000) {
             return false;
@@ -544,12 +581,12 @@ class Reflecty
      * Returns instances of attributes for a class or method.
      *
      * @template TAttribute
-     * @param  string|array{0:string, 1:string}  $target  Class name or [0 => class, 1 => method]
+     * @param  string|callable|array{0:string, 1:string}  $target  Class name or [0 => class, 1 => method]
      * @param  class-string<TAttribute>|null  $attributeClass  Filter attribute class
      * @return iterable<TAttribute>
      * @noinspection PhpElementIsNotAvailableInCurrentPhpVersionInspection
      */
-    public static function attributes(string|array $target, ?string $attributeClass = null): iterable
+    public static function attributes($target, ?string $attributeClass = null): iterable
     {
         if (PHP_VERSION_ID < 80000) {
             return [];
@@ -557,9 +594,17 @@ class Reflecty
 
         try {
             if (is_string($target)) {
-                $r = new ReflectionClass($target);
-            } elseif (is_array($target) && isset($target[0]) && isset($target[1])) {
-                $r = new ReflectionMethod($target[0], $target[1]);
+                if (class_exists($target)) {
+                    $r = static::classReflection($target);
+                } else {
+                    $r = new ReflectionMethod($target);
+                }
+            } elseif (is_callable($target)) {
+                if (is_array($target)) {
+                    $r = new ReflectionMethod($target[0], $target[1] ?? null);
+                } else {
+                    $r = new ReflectionMethod($target);
+                }
             } else {
                 return [];
             }
@@ -577,11 +622,11 @@ class Reflecty
      * Returns the first attribute instance of the given class/method.
      *
      * @template TAttribute
-     * @param  string|array{0:string, 1:string}  $target  Class name or [0 => class, 1 => method]
+     * @param  string|callable|array{0:string, 1:string}  $target  Class name or [0 => class, 1 => method]
      * @param  class-string<TAttribute>|null  $attributeClass  Filter attribute class
      * @return TAttribute|null
      */
-    public static function attribute(string|array $target, ?string $attributeClass = null)
+    public static function attribute($target, ?string $attributeClass = null)
     {
         foreach (self::attributes($target, $attributeClass) as $attr) {
             return $attr;
