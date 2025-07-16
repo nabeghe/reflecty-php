@@ -623,7 +623,7 @@ class Reflecty
      *
      * @template TAttribute
      * @param  string|callable|array{0:string, 1:string}  $target  Class name or [0 => class, 1 => method]
-     * @param  class-string<TAttribute>|null  $attributeClass  Filter attribute class
+     * @param  class-string<TAttribute>|null  $attributeClass  Optional. Filter attribute class. Default null.
      * @return TAttribute|null
      */
     public static function attribute($target, ?string $attributeClass = null)
@@ -633,5 +633,42 @@ class Reflecty
         }
 
         return null;
+    }
+
+    /**
+     * Returns the Meta attribute instance, with support for scanning all parent classes and merging them.
+     *
+     * @template TAttribute
+     * @param  string|callable|array{0:string, 1:string}  $target  Class name or [0 => class, 1 => method]
+     * @param  class-string<TAttribute>|null  $metaClass  Optional. The Meta attribute class. Default {@see Meta}.
+     * @return TAttribute|null
+     */
+    public static function meta($target, string $metaClass = Meta::class, bool $deep = false)
+    {
+        /**
+         * @var Meta $meta
+         */
+        $meta = Reflecty::attribute($target, $metaClass);
+
+        if ($deep && is_object($target) || (is_string($target) && class_exists($target))) {
+            $parents = Reflecty::classAncestors($target);
+
+            foreach ($parents as $parent_class) {
+                /**
+                 * @var Meta $old_meta
+                 */
+                $old_meta = Reflecty::attribute($parent_class, $metaClass);
+
+                if ($old_meta) {
+                    if ($meta) {
+                        $meta->merge($old_meta->all(), true, false);
+                    } else {
+                        $meta = $old_meta;
+                    }
+                }
+            }
+        }
+
+        return $meta;
     }
 }
